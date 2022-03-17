@@ -6,8 +6,8 @@ if (window.location.hash) {
 } else {
   var queryStringData = {
     response_type: "token",
-    client_id: clientId,
-    redirect_uri: RedirectURL,
+    client_id: "clientId",
+    redirect_uri: "RedirectURL",
   };
   const urlParam = $.param(queryStringData);
   console.log(urlParam);
