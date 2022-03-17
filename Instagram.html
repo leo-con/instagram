@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Instagram Comments</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+
+    <script>
+      $(document).ready(function () {
+        var instagramSelectedAccounts = [];
+        var instagramAccounts = [];
+        var media = [];
+        var messages = [];
+        const IMG_ACCOUNT =
+          "https://www.underconsideration.com/brandnew/archives/genesys_monogram_detail.png";
+        const IMG_CLIENT = "http://cdn.onlinewebfonts.com/svg/img_135335.png";
+        var currentMedia = "";
+
+        function getAccounts() {
+          console.log("getAccounts");
+
+          FB.api(
+            "/me/accounts/?fields=instagram_business_account,name,id,access_token,category,picture",
+            function (response) {
+              if (response && response.data && response.data.length > 0) {
+                console.log("accounts", response);
+                jQuery.each(response.data, function (i, val) {
+                  var picture =
+                    val.picture && val.picture.data ? val.picture.data.url : IMG_ACCOUNT;
+                  if (val.instagram_business_account && val.instagram_business_account.id) {
+                    instagramAccounts.push(val.instagram_business_account.id);
+                    $("#checkboxes").append(
+                      "<li>" +
+                        '<img class="img-circle" src="' +
+                        picture +
+                        '"/> ' +
+                        val.name +
+                        '<input class="checkAccount" value="' +
+                        val.instagram_business_account.id +
+                        '" type="radio" name="account" /> ' +
+                        "</li>"
+                    );
+                  }
+                });
+              }
+            }
+          );
+        }
+
+        function getMedia() {
+          media = [];
+          $("#media_box").empty();
+
+          console.log("init getMedia");
+
+          jQuery.each(instagramSelectedAccounts, function (i, accountId) {
+            FB.api(
+              "/" +
+                accountId +
+                "/media/?fields=comments_count,is_comment_enabled,caption,like_count,media_type,media_url,owner,permalink,thumbnail_url,timestamp,username",
+              function (response) {
+                console.log("Successful get media for: " + accountId, response);
+                jQuery.each(response.data, function (i, val) {
+                  media.push(val);
+                  showMedia(val);
+                });
+              }
+            );
+          });
+        }
+
+        function showMedia(m) {
+          var item =
+            '<li id="post_' +
+            m.id +
+            '"> <a href="#" data-toggle="modal" data-target="#commentsModal">  <img src="' +
+            m.media_url +
+            '"><div class="box_data"><span>' +
+            m.caption +
+            "</span></div></a></li>";
+          console.log("showmedia", m, item);
+          $("#media_box").append(item);
+
+          $("#post_" + m.id).click(function () {
+            $("#commentsModal").css("background-image", "url(" + m.media_url + ")");
+            getComments(m.id);
+          });
+        }
+
+        function showAllMedia() {
+          jQuery.each(media, function (i, m) {
+            showMedia(m);
+          });
+        }
+
+        function getComments(mediaId) {
+          console.log("getComments", mediaId);
+          var comments = [];
+          $("#commentList").empty();
+
+          currentMedia = mediaId;
+          FB.api(
+            "/" +
+              mediaId +
+              "/comments/?fields=user,username,id,like_count,hidden,media,text,timestamp&limit=200",
+            function (response) {
+              console.log("Successful get comments for: " + mediaId);
+              console.log(response);
+
+              jQuery.each(response.data, function (i, val) {
+                comments.push(val);
+                showComment(val);
+              });
+            }
+          );
+
+          return comments;
+        }
+
+        function getAllComments() {
+          jQuery.each(media, function (i, mediaId) {
+            FB.api(
+              "/" +
+                mediaId.id +
+                "/comments/?fields=user,username,id,like_count,hidden,media,text,timestamp&limit=200",
+              function (response) {
+                console.log("Successful get comments for: " + mediaId.id);
+                console.log(response);
+
+                jQuery.each(response.data, function (i, val) {
+                  messages.push(val);
+
+                  //mostrar
+                  //$('#comments').append('<li class="comment"> ' + val.text + '</li>');
+                });
+              }
+            );
+          });
+        }
+
+        function showComment(c) {
+          var img;
+
+          if (c.user && instagramSelectedAccounts.indexOf(c.user.id) >= 0) img = IMG_ACCOUNT;
+          else img = IMG_CLIENT;
+
+          var item =
+            '<li class="media"> <a href="#" class="pull-left"><img src="' +
+            img +
+            '" alt="" class="img-circle"> </a> <div class="media-body"> <span class="text-muted pull-right"> <small class="text-muted">' +
+            c.timestamp +
+            '</small> </span> <strong class="text-success">@@' +
+            c.username +
+            "</strong> <p>" +
+            c.text +
+            "</p> </div> </li>";
+
+          console.log("showComment", c, item);
+          $("#commentList").append(item);
+        }
+
+        function replyComment(mediaId, message) {
+          FB.api(
+            "/" + mediaId + "/comments",
+            "POST",
+            {
+              message: message,
+            },
+            function (response) {
+              console.log("Successful reply comments for: " + mediaId);
+              if (response.id) {
+                $("#txtComment").val("");
+                getComments(currentMedia);
+              }
+              console.log(response);
+            }
+          );
+        }
+
+        $("#myBtnAccount").click(function () {
+          $("#accountModal").modal();
+        });
+
+        $("#btnPostComment").click(function () {
+          replyComment(currentMedia, $("#txtComment").val());
+        });
+
+        $("#accountModal").on("hidden.bs.modal", function () {
+          instagramSelectedAccounts = [];
+
+          if ($(".checkAccount").is(":checked")) {
+            $(".checkAccount").each(function () {
+              if (this.checked) {
+                instagramSelectedAccounts.push(this.value);
+              }
+            });
+
+            if (instagramSelectedAccounts && instagramSelectedAccounts.length > 0)
+              console.log(instagramSelectedAccounts[0], "instagramSelectedAccounts");
+
+            getMedia();
+            $("#mediaModal").modal();
+          } else {
+            //no hay cuentas seleccionadas
+            alert("You must select an account");
+          }
+
+          console.log(instagramSelectedAccounts, "instagramSelectedAccounts|");
+        });
+
+        window.showComments = function () {
+          console.log("Welcome!  Fetching your information.... ");
+          FB.api("/me", function (response) {
+            console.log("Successful login for: " + response.name, response);
+            document.getElementById("status").innerHTML = "User: " + response.name;
+            document.getElementById("login").style.display = "none";
+            document.getElementById("myBtnAccount").style.display = "inline";
+          });
+
+          getAccounts();
+        };
+      });
+    </script>
+
+    <style>
+      img {
+        max-width: 100%;
+      }
+
+      .gallery_box li {
+        width: 33.333333%;
+        max-width: 100%;
+        display: inline-block;
+        float: left;
+        text-align: center;
+        overflow: hidden;
+        position: relative;
+      }
+      .gallery_box {
+        padding: 0;
+        display: flow-root;
+      }
+
+      .gallery_box li:hover img {
+        -moz-transform: scale(1.1);
+        -webkit-transform: scale(1.1);
+        -ms-transform: scale(1.1);
+        -o-transform: scale(1.1);
+        transform: scale(1.1);
+      }
+      .gallery_box li img {
+        -webkit-transition: transform 0.5s ease;
+        -o-transition: transform 0.5s ease;
+        transition: transform 0.5s ease;
+      }
+      .gallery_box li:nth-child(even) {
+        height: 304px;
+      }
+      .gallery_box li:nth-child(odd) {
+        height: 304px;
+      }
+      .gallery_box li:nth-child(odd) .box_data {
+        background: rgba(0, 0, 0, 0);
+      }
+      .gallery_box li:nth-child(even) .box_data {
+        background: rgba(0, 44, 255, 0.27);
+      }
+      .gallery_box .box_data {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        color: #fff;
+      }
+      .gallery_box .box_data span {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        left: 0;
+        right: 0;
+        font-size: 24px;
+      }
+      .gallery_box li:hover .box_data {
+        background: rgba(255, 0, 39, 0.55);
+      }
+
+      body {
+        margin-top: 20px;
+      }
+
+      .comment-wrapper .panel-body {
+        max-height: 650px;
+        overflow: auto;
+      }
+
+      .comment-wrapper .comment-list .media img {
+        width: 64px;
+        height: 64px;
+        border: 2px solid #e5e7e8;
+      }
+
+      .comment-wrapper .comment-list .media {
+        border-bottom: 1px dashed #efefef;
+        margin-bottom: 25px;
+      }
+
+      .panel-info > .panel-heading {
+        color: #ff4f1f;
+        background-color: #ff4f1f0f;
+        border-color: #ff4f1f;
+      }
+
+      .btn-info {
+        color: #fff;
+        background-color: #ff4f1f;
+        border-color: #ff4f1f0f;
+      }
+      .btn-info.active.focus,
+      .btn-info.active:focus,
+      .btn-info.active:hover,
+      .btn-info:active.focus,
+      .btn-info:active:focus,
+      .btn-info:active:hover,
+      .open > .dropdown-toggle.btn-info.focus,
+      .open > .dropdown-toggle.btn-info:focus,
+      .open > .dropdown-toggle.btn-info:hover {
+        color: #fff;
+        background-color: #ff4f1f;
+        border-color: #ff4f1f0f;
+      }
+
+      .panel-info {
+        border-color: #ff4f1f;
+      }
+
+      .h4,
+      h4 {
+        color: #ff4f1f;
+      }
+
+      #myBtnAccount {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      window.statusChangeCallback = function (response) {
+        console.log("statusChangeCallback");
+        console.log(response.accessToken, "token");
+        // The response object is returned with a status field that lets the
+        // app know the current login status of the person.
+        // Full docs on the response object can be found in the documentation
+        // for FB.getLoginStatus().
+        if (response.status === "connected") {
+          // Logged into your app and Facebook.
+          showComments();
+        } else {
+          // The person is not logged into your app or we are unable to tell.
+          document.getElementById("status").innerHTML = "Please log " + "into this app.";
+        }
+      };
+
+      window.checkLoginState = function () {
+        FB.getLoginStatus(function (response) {
+          console.log("checkLoginState", response);
+          statusChangeCallback(response);
+        });
+      };
+
+      window.fbAsyncInit = function () {
+        FB.init({
+          appId: "1288968731596687",
+          xfbml: true,
+          version: "v3.2",
+        });
+        FB.AppEvents.logPageView();
+      };
+
+      (function (d, s, id) {
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {
+          return;
+        }
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+      })(document, "script", "facebook-jssdk");
+    </script>
+
+    <div id="login">
+      <fb:login-button
+        auth_type="rerequest"
+        scope="public_profile,manage_pages,instagram_basic,instagram_manage_comments"
+        onlogin="checkLoginState();"
+      >
+      </fb:login-button>
+    </div>
+    <h5 id="status"></h5>
+
+    <button id="myBtnAccount" class="btn btn-info pull-left" type="button">
+      Select instagram accounts
+    </button>
+    <!--<button id="myBtnMedia" type="button">Posts</button>-->
+    <!-- Instagram Account Modal -->
+    <div class="modal fade" id="accountModal" role="dialog">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title">Instagram Accounts</h4>
+          </div>
+          <div class="modal-body">
+            <p>Select account</p>
+            <div id="checkboxes" class="gallery_box"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instagram Post Modal -->
+    <div class="modal fade" id="mediaModal" role="dialog">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title">Posts</h4>
+          </div>
+          <div class="modal-body">
+            <div id="media">
+              <ul id="media_box" class="gallery_box"></ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comments Modal -->
+    <div class="modal fade" id="commentsModal" role="dialog">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title">Comments</h4>
+          </div>
+          <div class="modal-body">
+            <div id="media">
+              <div class="row bootstrap snippets">
+                <div class="col-sm-12">
+                  <div class="comment-wrapper">
+                    <div class="panel panel-info">
+                      <div class="panel-heading">Comment panel</div>
+                      <div class="panel-body">
+                        <textarea
+                          id="txtComment"
+                          class="form-control"
+                          placeholder="write a comment..."
+                          rows="3"
+                        ></textarea>
+                        <br />
+                        <button id="btnPostComment" type="button" class="btn btn-info pull-right">
+                          Post
+                        </button>
+                        <div class="clearfix"></div>
+                        <hr />
+                        <ul id="commentList" class="comment-list"></ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
