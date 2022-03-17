@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width" />
+    <title>InstagramOAuth</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+      config = {
+        clientId: "bea18d4e180c406d9a1dba8a58b79dd8",
+        redirectUri: "http://localhost:56047/Home/InstagramOAuth",
+      };
+
+      function getParameterByName(name, data) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\#&?]" + name + "=([^&#?]*)"),
+          results = regex.exec(data);
+        return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+      }
+
+      function getToken() {
+        if (window.location.hash) {
+          token = getParameterByName("access_token", window.location.hash);
+          location.hash = "";
+          console.log(token, "token");
+
+          $.ajax({
+            url: "https://api.instagram.com/v1/users/self/media/recent/?access_token=" + token,
+            type: "GET",
+            success: showMedia,
+          });
+        } else {
+          //Config
+          config = {
+            clientId: "bea18d4e180c406d9a1dba8a58b79dd8",
+            redirectUri: "http://localhost:56047/Home/InstagramOAuth",
+          };
+
+          var queryStringData = {
+            response_type: "token",
+            client_id: config.clientId,
+            redirect_uri: config.redirectUri,
+          };
+
+          window.location.replace(
+            "https://api.instagram.com/oauth/authorize/?" + jQuery.param(queryStringData)
+          );
+        }
+      }
+
+      function showMedia(data) {
+        var titleInfo = $("<h2></h2>").text("Media");
+
+        var media = $("<lu></lu>");
+        $.each(data.data, function (index, value) {
+          media.append($("<li></li>").text(value.id));
+        });
+        $("body").append(titleInfo, media);
+        console.log(data);
+      }
+      getToken();
+    </script>
+  </head>
+  <body>
+    <div></div>
+  </body>
+</html>
