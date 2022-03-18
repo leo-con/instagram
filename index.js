@@ -37,7 +37,7 @@ postData = {
   clientId: "1288968731596687",
   client_secret: "5391836b14e83ca53d5470a2c521778b",
   grant_type: "authorization_code",
-  redirectUri: "https://leo-con.github.io/instagram/index.html",
+  redirect_uri: "https://leo-con.github.io/instagram/index.html",
   code: vcode,
 };
 getToken();
