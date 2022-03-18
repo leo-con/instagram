@@ -21,18 +21,13 @@
 
       <!--Row with two columns divided in 1:2 ratio-->
       <div class="row border justify-content-center">
-        <div class="col-4"><label>client_id</label></div>
+        <div class="col-4"><label>success</label></div>
         <div class="col-8">
-          <input id="client_id" class="form-control" type="text" value="1288968731596687" />
+          <input id="success" class="form-control" type="text" value="" />
         </div>
-        <div class="col-4"><label>redirect_uri</label></div>
+        <div class="col-4"><label>error</label></div>
         <div class="col-8">
-          <input
-            id="redirect_uri"
-            class="form-control"
-            type="text"
-            value="https://leo-con.github.io/instagram/index.html"
-          />
+          <input id="error" class="form-control" type="text" value="" />
         </div>
       </div>
 
@@ -40,7 +35,7 @@
       <div class="row border justify-content-end">
         <div class="col-3 border"></div>
         <div class="col-9 border align-self-end text-center">
-          <button class="btn btn-primary btn-block" onclick="iniciarOAuth();">OK</button>
+          <button class="btn btn-primary btn-block" onclick="getToken();">getToken</button>
         </div>
       </div>
     </div>
