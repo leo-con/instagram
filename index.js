@@ -45,5 +45,3 @@ function showMedia(data) {
   $("body").append(titleInfo, media);
   console.log(data);
 }
-
-getToken();
