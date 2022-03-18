@@ -1,0 +1,48 @@
+config = {
+  clientId: "1288968731596687",
+  redirectUri: "https://leo-con.github.io/instagram/InstagramOAuth.html",
+};
+
+function getParameterByName(name, data) {
+  name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+  var regex = new RegExp("[\\#&?]" + name + "=([^&#?]*)"),
+    results = regex.exec(data);
+  return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+function getToken() {
+  if (window.location.hash) {
+    token = getParameterByName("access_token", window.location.hash);
+    location.hash = "";
+    console.log(token, "token");
+
+    $.ajax({
+      url: "https://api.instagram.com/v13.0/users/self/media/recent/?access_token=" + token,
+      type: "GET",
+      success: showMedia,
+    });
+  } else {
+    var queryStringData = {
+      client_id: config.clientId,
+      redirect_uri: config.redirectUri,
+      scope: "user_profile,user_media",
+      response_type: "code",
+    };
+
+    window.location.replace(
+      "https://api.instagram.com/oauth/authorize/?" + jQuery.param(queryStringData)
+    );
+  }
+}
+
+function showMedia(data) {
+  var titleInfo = $("<h2></h2>").text("Media");
+
+  var media = $("<lu></lu>");
+  $.each(data.data, function (index, value) {
+    media.append($("<li></li>").text(value.id));
+  });
+  $("body").append(titleInfo, media);
+  console.log(data);
+}
+getToken();
