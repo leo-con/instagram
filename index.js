@@ -13,6 +13,9 @@ function getToken() {
     url: v_url,
     data: postData,
     success: test,
+    error: function (e) {
+      console.log(e);
+    },
   });
 }
 
@@ -34,7 +37,7 @@ function showMedia(data) {
 const vcode = getParameterByName("code");
 
 postData = {
-  clientId: "1288968731596687",
+  client_id: "1288968731596687",
   client_secret: "5391836b14e83ca53d5470a2c521778b",
   grant_type: "authorization_code",
   redirect_uri: "https://leo-con.github.io/instagram/index.html",
