@@ -3,6 +3,13 @@ config = {
   redirectUri: "https://leo-con.github.io/instagram/index.html",
 };
 
+function iniciarOAuth() {
+  const client_id = document.getElementById("client_id").value;
+  const redirect_uri = document.getElementById("redirect_uri").value;
+  let sURL = `https://api.instagram.com/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect_uri}&scope=user_profile,user_media&response_type=code`;
+  window.location.href = sURL;
+}
+
 function getParameterByName(name, data) {
   name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
   var regex = new RegExp("[\\#&?]" + name + "=([^&#?]*)"),
